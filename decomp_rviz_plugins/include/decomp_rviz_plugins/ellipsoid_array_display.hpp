@@ -13,7 +13,7 @@
 #include "ellipsoid_array_visual.hpp"
 
 
-#include <tf2/exceptions.h>
+#include <tf2/exceptions.hpp>
 #include <tf2_ros/transform_listener.h>
 #include <tf2_ros/buffer.h>
 

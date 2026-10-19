@@ -1,7 +1,7 @@
 ################################################################################
 # Set minimum required version of cmake, project name and compile options
 ################################################################################
-cmake_minimum_required(VERSION 3.5)
+cmake_minimum_required(VERSION 3.16)
 project(decomp_test_node)
 
 if(NOT CMAKE_CXX_STANDARD)
@@ -13,9 +13,9 @@ if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
 endif()
 
 find_package(ament_cmake REQUIRED)
+find_package(ament_cmake_target_dependencies REQUIRED)
 find_package(Eigen3 REQUIRED)
 find_package(decomp_util REQUIRED)
-find_package(Boost REQUIRED COMPONENTS system)
 find_package(PCL REQUIRED)
 
 
@@ -40,7 +40,8 @@ include_directories(
     include 
     ${EIGEN3_INCLUDE_DIRS} 
     ${DECOMP_UTIL_INCLUDE_DIRS}
-    ${PCL_INCLUDE_DIRS})
+    ${PCL_INCLUDE_DIRS}
+    ${decomp_rviz_plugins_INCLUDE_DIRS})
 
 set(DEPENDENCIES
   "rclcpp"
@@ -65,10 +66,20 @@ set(DEPENDENCIES
 add_executable(test_path_decomp_3d src/test_path_decomp_3d.cpp)
 link_directories(${PCL_LIBRARY_DIRS})
 add_definitions(${PCL_DEFINITIONS})
-target_link_libraries(test_path_decomp_3d ${Boost_SYSTEM_LIBRARY} 
+target_link_libraries(test_path_decomp_3d 
       ${PCL_LIBRARIES}
+      rclcpp::rclcpp
+      rosbag2_cpp::rosbag2_cpp
+      rcutils::rcutils
+      ${nav_msgs_TARGETS}
+      ${decomp_ros_msgs_TARGETS}
+      ${sensor_msgs_TARGETS}
+      ${std_msgs_TARGETS}
+      ${rcl_interfaces_TARGETS}
+      tf2_geometry_msgs::tf2_geometry_msgs
+      pcl_conversions::pcl_conversions
+      decomp_rviz_plugins::decomp_rviz_plugins
 )
-ament_target_dependencies(test_path_decomp_3d ${DEPENDENCIES})
 
 
 install(

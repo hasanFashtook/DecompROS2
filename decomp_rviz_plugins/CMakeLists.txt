@@ -1,22 +1,23 @@
 ################################################################################
 # Set minimum required version of cmake, project name and compile options
 ################################################################################
-cmake_minimum_required(VERSION 3.5)
+cmake_minimum_required(VERSION 3.16)
 project(decomp_rviz_plugins)
 
 
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++17 -Wall -Wno-deprecated-declarations")
 find_package(ament_cmake REQUIRED)
 find_package(Eigen3 REQUIRED)
-find_package(Boost REQUIRED COMPONENTS system)
 find_package(PCL REQUIRED)
 find_package(decomp_util REQUIRED)
 find_package(rclcpp REQUIRED)
 find_package(rviz_common REQUIRED)
 find_package(rviz_default_plugins REQUIRED)
 find_package(rviz_ogre_vendor REQUIRED)
-find_package(rviz_rendering REQUIRED)
-find_package(Qt5 REQUIRED COMPONENTS Widgets Core)
+find_package(Qt6 QUIET COMPONENTS Widgets Core)
+if(NOT Qt6_FOUND)
+  find_package(Qt5 REQUIRED COMPONENTS Widgets Core)
+endif()
 find_package(decomp_ros_msgs REQUIRED)
 find_package(tf2 REQUIRED)
 find_package(tf2_ros REQUIRED)
@@ -31,16 +32,12 @@ include_directories(${EIGEN3_INCLUDE_DIRS} ${DECOMP_UTIL_INCLUDE_DIRS}  ${PCL_IN
 add_definitions(-DQT_NO_KEYWORDS)
 link_directories(${PCL_LIBRARY_DIRS})
 add_definitions(${PCL_DEFINITIONS})
-## This setting causes Qt's "MOC" generation to happen automatically.
-## this does not moc things in include!!!!!!! only in src
 set(CMAKE_AUTOMOC ON)
 
 include_directories(
   include
   ${rclcpp_INCLUDE_DIRS}
   ${rviz_common_INCLUDE_DIRS}
-  ${Qt5Core_INCLUDE_DIRS}
-  ${Qt5Widgets_INCLUDE_DIRS}
 )
 
 set(CMAKE_INCLUDE_CURRENT_DIR ON)
@@ -56,11 +53,6 @@ set(decomp_rviz_plugins_headers_to_moc
   include/${PROJECT_NAME}/polyhedron_array_display.hpp
 )
 
-foreach(header "${vision_msgs_rviz_plugins_headers_to_moc}")
-  qt5_wrap_cpp(decomp_rviz_plugins_moc_files "${header}")
-endforeach()
-
-
 set(decomp_rviz_plugins_source_files
   src/bound_visual.cpp
   src/mesh_shape.cpp 
@@ -68,39 +60,50 @@ set(decomp_rviz_plugins_source_files
   src/vector_visual.cpp
   src/ellipsoid_array_visual.cpp
   src/ellipsoid_array_display.cpp
-  src/polyhedron_array_display.cpp)
+  src/polyhedron_array_display.cpp
+  ${decomp_rviz_plugins_headers_to_moc}
+)
 
-add_library(${PROJECT_NAME} SHARED ${decomp_rviz_plugins_source_files} 
-                      ${decomp_rviz_plugins_moc_files})
+add_library(${PROJECT_NAME} SHARED ${decomp_rviz_plugins_source_files})
 
 target_include_directories(${PROJECT_NAME} PUBLIC
             $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
             $<INSTALL_INTERFACE:include/${PROJECT_NAME}>
-            ${Qt5Widgets_INCLUDE_DIRS} )
+)
+
+if(TARGET Qt6::Widgets)
+  target_link_libraries(${PROJECT_NAME} PUBLIC Qt6::Widgets Qt6::Core)
+elseif(TARGET Qt5::Widgets)
+  target_link_libraries(${PROJECT_NAME} PUBLIC Qt5::Widgets Qt5::Core)
+endif()
 
 target_link_libraries(${PROJECT_NAME} PUBLIC
             rviz_ogre_vendor::OgreMain
             rviz_ogre_vendor::OgreOverlay
-            rviz_common::rviz_common ${Boost_SYSTEM_LIBRARY}  ${PCL_LIBRARIES}
+            rviz_common::rviz_common ${PCL_LIBRARIES}
 )
 
 target_compile_definitions(${PROJECT_NAME}
                  PRIVATE "RVIZ_DEFAULT_PLUGINS_BUILDING_LIBRARY")
 
-ament_target_dependencies(${PROJECT_NAME}
+target_link_libraries(${PROJECT_NAME}
         PUBLIC
-        rclcpp
-        rclcpp_components
-        rviz_common
-        rviz_default_plugins
-        rviz_ogre_vendor
-        rviz_rendering
-        decomp_ros_msgs
-        tf2 
-        tf2_ros 
-        sensor_msgs
-        pcl_conversions
-        nav_msgs)
+        rclcpp::rclcpp
+        rclcpp_components::component
+        rviz_common::rviz_common
+        rviz_default_plugins::rviz_default_plugins
+        rviz_rendering::rviz_rendering
+        ${decomp_ros_msgs_TARGETS}
+        tf2::tf2
+        tf2_ros::tf2_ros
+        sensor_msgs::sensor_msgs__rosidl_generator_c
+        sensor_msgs::sensor_msgs__rosidl_typesupport_c
+        sensor_msgs::sensor_msgs__rosidl_typesupport_cpp
+        pcl_conversions::pcl_conversions
+        nav_msgs::nav_msgs__rosidl_generator_c
+        nav_msgs::nav_msgs__rosidl_typesupport_c
+        nav_msgs::nav_msgs__rosidl_typesupport_cpp
+)
 
 ## Here we export the plugins and meshes so they can be found by RViz at runtime.
 pluginlib_export_plugin_description_file(rviz_common plugin_description.xml)
@@ -135,7 +138,7 @@ install(
 
 install(
   DIRECTORY include/
-  DESTINATION include/${PROJECT_NAME}
+  DESTINATION include
 )
 
 

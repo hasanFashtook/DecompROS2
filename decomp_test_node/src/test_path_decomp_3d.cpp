@@ -7,7 +7,7 @@
 #include <nav_msgs/msg/path.hpp>
 #include <pcl_conversions/pcl_conversions.h>
 
-#include <tf2_geometry_msgs/tf2_geometry_msgs.h>
+#include <tf2_geometry_msgs/tf2_geometry_msgs.hpp>
 #include <decomp_ros_msgs/msg/ellipsoid_array.hpp>
 #include <decomp_ros_msgs/msg/polyhedron_array.hpp>
 #include <chrono>
